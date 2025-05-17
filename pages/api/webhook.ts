@@ -95,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const { error: updateError } = await supabase
         .from('usuarios')
-        .update({ plan_expira_en: fechaExpira })
+        .update({ plan_expira_en: fechaExpira,  plan_cancelado: true })
         .eq('id', user.id);
 
       if (updateError) {
