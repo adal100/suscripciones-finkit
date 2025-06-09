@@ -1,8 +1,15 @@
 'use client';
+import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 import { Player } from '@lottiefiles/react-lottie-player';
 
 export default function LandingPage() {
+  const [showAnimation, setShowAnimation] = useState(false);
+
+  useEffect(() => {
+    setShowAnimation(true);
+  }, []);
+
   return (
     <main>
       {/* Hero principal */}
@@ -11,12 +18,16 @@ export default function LandingPage() {
         <p style={{ marginBottom: '1rem' }}>
           Sube tu estado de cuenta. Finkit lo analiza por ti y te muestra todo claro, visual y automático.
         </p>
-        <Player
-          autoplay
-          loop
-          src="/assets/lottie/hero-animation.json"
-          style={{ height: '220px', margin: '0 auto' }}
-        />
+
+        {showAnimation && (
+          <Player
+            autoplay
+            loop
+            src="/assets/lottie/hero-animation.json"
+            style={{ height: '220px', margin: '0 auto' }}
+          />
+        )}
+
         <a href="/suscripcion">Empieza gratis</a>
       </section>
 
