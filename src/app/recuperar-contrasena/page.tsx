@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-export default function RecuperarContrasenaPage() {
+export default function RecuperarPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
-  const [user, setUser] = useState<any>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mensaje, setMensaje] = useState('');
@@ -14,72 +13,42 @@ export default function RecuperarContrasenaPage() {
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
-    console.log('✅ useEffect montado');
-
     if (typeof window !== 'undefined') {
-      console.log('🌐 window.location.href:', window.location.href);
-
-      let token: string | null = null;
-
-      if (window.location.hash) {
-        const hashParams = new URLSearchParams(window.location.hash.slice(1));
-        token = hashParams.get('access_token');
-        console.log('🔑 Token leído desde hash:', token);
-      } else {
-        console.warn('⚠️ No se encontró hash en la URL');
-      }
-
-      setAccessToken(token);
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('access_token');
+      console.log('🔐 Token desde URL:', token);
 
       if (!token) {
         setError('No se encontró token en la URL');
         return;
       }
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      setAccessToken(token);
 
-      console.log('🌍 Supabase URL:', supabaseUrl);
-      console.log('🔐 ANON KEY definida:', !!supabaseAnon);
-
-      if (!supabaseUrl || !supabaseAnon) {
-        setError('Faltan variables de entorno de Supabase.');
-        return;
-      }
-
-      const supabaseClient = createClient(supabaseUrl, supabaseAnon);
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       setSupabase(supabaseClient);
 
-      supabaseClient.auth
-        .setSession({
-          access_token: token,
-          refresh_token: '',
-        })
-        .then(async ({ error }) => {
-          console.log('📥 Resultado setSession:', error ?? '✅ Sesión válida');
-          if (error) {
-            setError('El enlace ha expirado o no es válido.');
-            return;
-          }
-
-          const { data: userData, error: userError } = await supabaseClient.auth.getUser();
-          if (userError || !userData?.user) {
-            console.warn('⚠️ No se pudo obtener usuario:', userError);
-            setError('No se pudo validar tu sesión.');
-          } else {
-            console.log('👤 Usuario obtenido:', userData.user);
-            setUser(userData.user);
-          }
-        });
+      supabaseClient.auth.setSession({
+        access_token: token,
+        refresh_token: '',
+      }).then(({ error }) => {
+        if (error) {
+          console.error('❌ Error al setear sesión:', error.message);
+          setError('Error validando el enlace. Intenta solicitar otro.');
+        } else {
+          console.log('✅ Sesión establecida correctamente');
+        }
+      });
     }
   }, []);
 
   const handleGuardar = async () => {
-    console.log('🚀 Guardar contraseña ejecutado');
     setError('');
-
     if (!supabase) {
-      console.warn('⚠️ Supabase aún no inicializado');
+      console.warn('❗ Supabase no está inicializado aún');
       return;
     }
 
@@ -94,15 +63,16 @@ export default function RecuperarContrasenaPage() {
     }
 
     setCargando(true);
+    console.log('🔄 Cambiando contraseña...');
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setCargando(false);
 
     if (error) {
-      console.error('❌ Error al actualizar contraseña:', error.message);
-      setError('Error al actualizar contraseña: ' + error.message);
+      console.error('❌ Error al cambiar contraseña:', error.message);
+      setError(error.message);
     } else {
       console.log('✅ Contraseña actualizada correctamente');
-      setMensaje('✅ Tu contraseña fue actualizada. Ya puedes iniciar sesión en Finkit.');
+      setMensaje('✅ Contraseña actualizada. Ya puedes volver a la app.');
     }
   };
 
@@ -143,7 +113,7 @@ export default function RecuperarContrasenaPage() {
           />
           <button
             onClick={handleGuardar}
-            disabled={cargando || !supabase || !user}
+            disabled={cargando || !supabase}
             style={{
               backgroundColor: '#007AFF',
               color: '#fff',
@@ -154,7 +124,6 @@ export default function RecuperarContrasenaPage() {
               borderRadius: '8px',
               fontWeight: 'bold',
               cursor: 'pointer',
-              opacity: cargando || !supabase || !user ? 0.6 : 1,
             }}
           >
             {cargando ? 'Guardando...' : 'Guardar contraseña'}
