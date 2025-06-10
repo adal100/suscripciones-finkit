@@ -1,13 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export default function RecuperarPage() {
-  const searchParams = useSearchParams();
-  const accessToken = searchParams?.get('access_token');
-
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,35 +13,39 @@ export default function RecuperarPage() {
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
-    const supabaseClient = createClient(
-      process.env.PUBLIC_SUPABASE_URL!,
-      process.env.PUBLIC_SUPABASE_ANON_KEY!
-    );
-    setSupabase(supabaseClient);
-  }, []);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('access_token');
+      setAccessToken(token);
 
-  useEffect(() => {
-    if (accessToken && supabase) {
-      supabase.auth
-        .setSession({
-          access_token: accessToken,
+      if (token) {
+        const supabaseClient = createClient(
+          process.env.PUBLIC_SUPABASE_URL!,
+          process.env.PUBLIC_SUPABASE_ANON_KEY!
+        );
+        setSupabase(supabaseClient);
+
+        supabaseClient.auth.setSession({
+          access_token: token,
           refresh_token: '',
-        })
-        .then(({ error }) => {
+        }).then(({ error }) => {
           if (error) {
             setError('Error validando el enlace. Intenta solicitar otro.');
           }
         });
+      }
     }
-  }, [accessToken, supabase]);
+  }, []);
 
   const handleGuardar = async () => {
     setError('');
     if (!supabase) return;
+
     if (newPassword.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
+
     if (newPassword !== confirmPassword) {
       setError('Las contraseñas no coinciden.');
       return;
