@@ -14,9 +14,10 @@ export default function RecuperarPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('access_token');
-      console.log('🔐 Token desde URL:', token);
+      // Leer el token desde el hash, no desde search
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      const token = hashParams.get('access_token');
+      console.log('🔑 Token leído desde hash:', token);
 
       if (!token) {
         setError('No se encontró token en la URL');
