@@ -1,19 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.PUBLIC_SUPABASE_URL!,
-  process.env.PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useSearchParams } from 'next/navigation';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export default function RecuperarPage() {
   const searchParams = useSearchParams();
   const accessToken = searchParams?.get('access_token');
-  const router = useRouter();
 
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mensaje, setMensaje] = useState('');
@@ -21,25 +16,31 @@ export default function RecuperarPage() {
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
-    if (!accessToken) {
-      setError('Falta el token de acceso.');
-      return;
-    }
+    const supabaseClient = createClient(
+      process.env.PUBLIC_SUPABASE_URL!,
+      process.env.PUBLIC_SUPABASE_ANON_KEY!
+    );
+    setSupabase(supabaseClient);
+  }, []);
 
-    supabase.auth
-      .setSession({
-        access_token: accessToken,
-        refresh_token: '',
-      })
-      .then(({ error }) => {
-        if (error) {
-          setError('Error validando el enlace. Intenta solicitar otro.');
-        }
-      });
-  }, [accessToken]);
+  useEffect(() => {
+    if (accessToken && supabase) {
+      supabase.auth
+        .setSession({
+          access_token: accessToken,
+          refresh_token: '',
+        })
+        .then(({ error }) => {
+          if (error) {
+            setError('Error validando el enlace. Intenta solicitar otro.');
+          }
+        });
+    }
+  }, [accessToken, supabase]);
 
   const handleGuardar = async () => {
     setError('');
+    if (!supabase) return;
     if (newPassword.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres.');
       return;
@@ -97,7 +98,7 @@ export default function RecuperarPage() {
           />
           <button
             onClick={handleGuardar}
-            disabled={cargando}
+            disabled={cargando || !supabase}
             style={{
               backgroundColor: '#007AFF',
               color: '#fff',
