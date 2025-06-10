@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-export default function RecuperarPage() {
+export default function RecuperarContrasenaPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mensaje, setMensaje] = useState('');
@@ -13,33 +14,65 @@ export default function RecuperarPage() {
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
+    console.log('✅ useEffect montado');
+
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('access_token');
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('access_token');
+      console.log('🔑 Token recibido:', token);
       setAccessToken(token);
 
-      if (token) {
-        const supabaseClient = createClient(
-          process.env.PUBLIC_SUPABASE_URL!,
-          process.env.PUBLIC_SUPABASE_ANON_KEY!
-        );
-        setSupabase(supabaseClient);
+      if (!token) {
+        setError('No se encontró token en la URL');
+        return;
+      }
 
-        supabaseClient.auth.setSession({
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      console.log('🌍 URL Supabase:', supabaseUrl);
+      console.log('🔐 ANON KEY definida:', !!supabaseAnon);
+
+      if (!supabaseUrl || !supabaseAnon) {
+        setError('Variables de entorno faltantes');
+        return;
+      }
+
+      const supabaseClient = createClient(supabaseUrl, supabaseAnon);
+      setSupabase(supabaseClient);
+
+      supabaseClient.auth
+        .setSession({
           access_token: token,
           refresh_token: '',
-        }).then(({ error }) => {
+        })
+        .then(async ({ error }) => {
+          console.log('📥 Resultado setSession:', error ?? '✅ Sin errores');
           if (error) {
-            setError('Error validando el enlace. Intenta solicitar otro.');
+            setError('El enlace ha expirado o es inválido.');
+            return;
+          }
+
+          const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+          if (userError || !userData?.user) {
+            console.warn('⚠️ No se pudo obtener usuario:', userError);
+            setError('No se pudo validar tu sesión.');
+          } else {
+            console.log('👤 Usuario obtenido:', userData.user);
+            setUser(userData.user);
           }
         });
-      }
     }
   }, []);
 
   const handleGuardar = async () => {
+    console.log('🚀 Guardar contraseña ejecutado');
     setError('');
-    if (!supabase) return;
+
+    if (!supabase) {
+      console.warn('⚠️ Supabase aún no inicializado');
+      return;
+    }
 
     if (newPassword.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres.');
@@ -56,9 +89,11 @@ export default function RecuperarPage() {
     setCargando(false);
 
     if (error) {
-      setError(error.message);
+      console.error('❌ Error al actualizar contraseña:', error.message);
+      setError('Error al actualizar contraseña: ' + error.message);
     } else {
-      setMensaje('✅ Contraseña actualizada. Ya puedes volver a la app.');
+      console.log('✅ Contraseña actualizada exitosamente');
+      setMensaje('✅ Tu contraseña fue actualizada. Ya puedes iniciar sesión en Finkit.');
     }
   };
 
@@ -99,7 +134,7 @@ export default function RecuperarPage() {
           />
           <button
             onClick={handleGuardar}
-            disabled={cargando || !supabase}
+            disabled={cargando || !supabase || !user}
             style={{
               backgroundColor: '#007AFF',
               color: '#fff',
@@ -110,6 +145,7 @@ export default function RecuperarPage() {
               borderRadius: '8px',
               fontWeight: 'bold',
               cursor: 'pointer',
+              opacity: cargando || !supabase || !user ? 0.6 : 1,
             }}
           >
             {cargando ? 'Guardando...' : 'Guardar contraseña'}
