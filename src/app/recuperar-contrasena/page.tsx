@@ -17,9 +17,18 @@ export default function RecuperarContrasenaPage() {
     console.log('✅ useEffect montado');
 
     if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('access_token');
-      console.log('🔑 Token recibido:', token);
+      console.log('🌐 window.location.href:', window.location.href);
+
+      let token: string | null = null;
+
+      if (window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.slice(1));
+        token = hashParams.get('access_token');
+        console.log('🔑 Token leído desde hash:', token);
+      } else {
+        console.warn('⚠️ No se encontró hash en la URL');
+      }
+
       setAccessToken(token);
 
       if (!token) {
@@ -30,11 +39,11 @@ export default function RecuperarContrasenaPage() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-      console.log('🌍 URL Supabase:', supabaseUrl);
+      console.log('🌍 Supabase URL:', supabaseUrl);
       console.log('🔐 ANON KEY definida:', !!supabaseAnon);
 
       if (!supabaseUrl || !supabaseAnon) {
-        setError('Variables de entorno faltantes');
+        setError('Faltan variables de entorno de Supabase.');
         return;
       }
 
@@ -47,9 +56,9 @@ export default function RecuperarContrasenaPage() {
           refresh_token: '',
         })
         .then(async ({ error }) => {
-          console.log('📥 Resultado setSession:', error ?? '✅ Sin errores');
+          console.log('📥 Resultado setSession:', error ?? '✅ Sesión válida');
           if (error) {
-            setError('El enlace ha expirado o es inválido.');
+            setError('El enlace ha expirado o no es válido.');
             return;
           }
 
@@ -92,7 +101,7 @@ export default function RecuperarContrasenaPage() {
       console.error('❌ Error al actualizar contraseña:', error.message);
       setError('Error al actualizar contraseña: ' + error.message);
     } else {
-      console.log('✅ Contraseña actualizada exitosamente');
+      console.log('✅ Contraseña actualizada correctamente');
       setMensaje('✅ Tu contraseña fue actualizada. Ya puedes iniciar sesión en Finkit.');
     }
   };
