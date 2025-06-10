@@ -14,44 +14,45 @@ export default function RecuperarPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Leer el token desde el hash, no desde search
-      const hashParams = new URLSearchParams(window.location.hash.slice(1));
-      const token = hashParams.get('access_token');
-      console.log('🔑 Token leído desde hash:', token);
+      // Usamos setTimeout para dar tiempo a que el navegador retenga el hash
+      setTimeout(() => {
+        const hash = window.location.hash;
+        console.log('🔍 Hash actual:', hash);
 
-      if (!token) {
-        setError('No se encontró token en la URL');
-        return;
-      }
+        const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
+        const token = hashParams.get('access_token');
 
-      setAccessToken(token);
-
-      const supabaseClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      setSupabase(supabaseClient);
-
-      supabaseClient.auth.setSession({
-        access_token: token,
-        refresh_token: '',
-      }).then(({ error }) => {
-        if (error) {
-          console.error('❌ Error al setear sesión:', error.message);
-          setError('Error validando el enlace. Intenta solicitar otro.');
-        } else {
-          console.log('✅ Sesión establecida correctamente');
+        if (!token) {
+          setError('El enlace ha expirado o no es válido.');
+          return;
         }
-      });
+
+        setAccessToken(token);
+
+        const supabaseClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        setSupabase(supabaseClient);
+
+        supabaseClient.auth.setSession({
+          access_token: token,
+          refresh_token: '',
+        }).then(({ error }) => {
+          if (error) {
+            console.error('❌ Error al establecer sesión', error.message);
+            setError('Error validando el enlace. Intenta solicitar otro.');
+          } else {
+            console.log('✅ Sesión iniciada correctamente con token de recuperación');
+          }
+        });
+      }, 100); // le damos un pequeño delay para evitar pérdida del hash
     }
   }, []);
 
   const handleGuardar = async () => {
     setError('');
-    if (!supabase) {
-      console.warn('❗ Supabase no está inicializado aún');
-      return;
-    }
+    if (!supabase) return;
 
     if (newPassword.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres.');
@@ -64,12 +65,11 @@ export default function RecuperarPage() {
     }
 
     setCargando(true);
-    console.log('🔄 Cambiando contraseña...');
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setCargando(false);
 
     if (error) {
-      console.error('❌ Error al cambiar contraseña:', error.message);
+      console.error('❌ Error actualizando contraseña:', error.message);
       setError(error.message);
     } else {
       console.log('✅ Contraseña actualizada correctamente');
