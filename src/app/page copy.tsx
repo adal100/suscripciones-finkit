@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import styles from './page.module.css';
+import { Player } from '@lottiefiles/react-lottie-player';
 
 export default function LandingPage() {
   const [showAnimation, setShowAnimation] = useState(false);
@@ -17,6 +18,15 @@ export default function LandingPage() {
         <p style={{ marginBottom: '1rem' }}>
           Sube tu estado de cuenta. Finkit lo analiza por ti y te muestra todo claro, visual y automático.
         </p>
+
+        {showAnimation && (
+          <Player
+            autoplay
+            loop
+            src="/assets/lottie/hero-animation.json"
+            style={{ height: '220px', margin: '0 auto' }}
+          />
+        )}
 
         <a href="/suscripcion">Empieza gratis</a>
       </section>
@@ -127,20 +137,20 @@ export default function LandingPage() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
           <div>
             <a href="/privacidad" style={{ marginRight: '1rem' }}>Política de Privacidad</a>
-            <a href="mailto:contacto.finkit@gmail.com">Contacto</a>
+            <a href="mailto:hola@finkit.app">Contacto</a>
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-            <a href="https://twitter.com/" target="_blank" rel="noopener noreferrer">
+            <a href="https://twitter.com/tuusuario" target="_blank" rel="noopener noreferrer">
               <img src="/assets/img/x.svg" alt="X" width="24" height="24" />
             </a>
-            <a href="https://www.instagram.com/finkit_mx/" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.instagram.com/tuusuario" target="_blank" rel="noopener noreferrer">
               <img src="/assets/img/instagram.svg" alt="Instagram" width="24" height="24" />
             </a>
-            <a href="https://www.facebook.com/FinkitMx/" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.facebook.com/tuusuario" target="_blank" rel="noopener noreferrer">
               <img src="/assets/img/facebook.svg" alt="Facebook" width="24" height="24" />
             </a>
-            <a href="https://www.tiktok.com/@finkit_mx" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.tiktok.com/@tuusuario" target="_blank" rel="noopener noreferrer">
               <img src="/assets/img/tiktok.svg" alt="Tiktok" width="24" height="24" />
             </a>
           </div>
